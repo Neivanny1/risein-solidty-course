@@ -43,7 +43,8 @@ contract ProposalContract {
         owner = new_owner;
     }
 
-        function isVoted(address _address) private view returns (bool) {
+    // 3 query functions to retrieve data from the blockchain
+    function isVoted(address _address) private view returns (bool) {
         for (uint256 i = 0; i < voted_addresses.length; i++) {
             if (voted_addresses[i] == _address) {
                 return true;
@@ -53,53 +54,66 @@ contract ProposalContract {
     }
 
     function create(string calldata _title, string calldata _description,
-    uint256 _total_vote_to_end) external onlyOwner {
+                    uint256 _total_vote_to_end) external onlyOwner {
         counter += 1;
         proposal_history[counter] = Proposal(_title, _description,
         0, 0, 0, _total_vote_to_end, false, true);
     }
+
     function vote(uint8 choice) external active newVoter(msg.sender){
-    Proposal storage proposal = proposal_history[counter];
-    uint256 total_vote = proposal.approve + proposal.reject + proposal.pass;
+        Proposal storage proposal = proposal_history[counter];
+        uint256 total_vote = proposal.approve + proposal.reject + proposal.pass;
 
-    voted_addresses.push(msg.sender);
+        voted_addresses.push(msg.sender);
 
-    if (choice == 1) {
-        proposal.approve += 1;
-        proposal.current_state = calculateCurrentState();
-    } else if (choice == 2) {
-        proposal.reject += 1;
-        proposal.current_state = calculateCurrentState();
-    } else if (choice == 0) {
-        proposal.pass += 1;
-        proposal.current_state = calculateCurrentState();
+        if (choice == 1) {
+            proposal.approve += 1;
+            proposal.current_state = calculateCurrentState();
+        } else if (choice == 2) {
+            proposal.reject += 1;
+            proposal.current_state = calculateCurrentState();
+        } else if (choice == 0) {
+            proposal.pass += 1;
+            proposal.current_state = calculateCurrentState();
+        }
+
+        if ((proposal.total_vote_to_end - total_vote == 1) && (choice == 1 || choice == 2 || choice == 0)) {
+            proposal.is_active = false;
+            voted_addresses = [owner];
+            }
     }
 
-    if ((proposal.total_vote_to_end - total_vote == 1) && (choice == 1 || choice == 2 || choice == 0)) {
-        proposal.is_active = false;
-        voted_addresses = [owner];
-    }
-    }
+    function teminateProposal() external onlyOwner active {
+        proposal_history[counter].is_active = false;
+        }
 
     function calculateCurrentState() private view returns (bool) {
-    Proposal storage proposal = proposal_history[counter];
+        Proposal storage proposal = proposal_history[counter];
 
-    uint256 totalVotes = proposal.approve + proposal.reject + proposal.pass;
+        uint256 totalVotes = proposal.approve + proposal.reject + proposal.pass;
 
-    if (totalVotes == 0) {
-        // No votes cast; return default (consider it failed)
-        return false;
-    }
-    // Check if approve votes make up more than 60% of total votes
-    if (proposal.approve * 100 / totalVotes > 60) {
-        return true;
-    }
-    // Check if reject votes make up more than 40% of total votes
-    if (proposal.reject * 100 / totalVotes > 40) {
-        return false;
-    }
-    // If neither of the above conditions is met, use pass votes as a tie-breaker
-    return proposal.pass % 2 == 0; // Even pass votes favor approval, odd favors rejection
-}
+        if (totalVotes == 0) {
+            // No votes cast; return default (consider it failed)
+            return false;
+                }
+        // Check if approve votes make up more than 60% of total votes
+        if (proposal.approve * 100 / totalVotes > 60) {
+            return true;
+                }
+        // Check if reject votes make up more than 40% of total votes
+        if (proposal.reject * 100 / totalVotes > 40) {
+            return false;
+                }
+        // If neither of the above conditions is met, use pass votes as a tie-breaker
+        return proposal.pass % 2 == 0; // Even pass votes favor approval, odd favors rejection
+            }
 
+        // getter function to retrieve the current proposal
+        function getCurrentProposal() external view returns(Proposal memory) {
+        return proposal_history[counter];
+            }
+        // function to get a specific proposal
+        function getProposal(uint256 number) external view returns(Proposal memory) {
+            return proposal_history[number];
+            }
 }
