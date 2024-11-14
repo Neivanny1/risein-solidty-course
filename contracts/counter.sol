@@ -62,12 +62,12 @@ contract Example {
     // It does not change any data on the chain. It just rerieves data.
     // We use the keyword view to indicate it retrieves data but does not change any.
     // Since we are not modifying any data, we do not pay any gas fee.
-
-
+    function get_counter_description() external view returns(string memory) {
+        return counter.description;
+    }
     // This function returns the number field of our counter struct.
     // Returning the current state of our counter.
     function get_counter_value() external view returns(uint) {
         return counter.number;
     }
 }
-
